@@ -1,12 +1,10 @@
 import RPi.GPIO as GPIO
 import time
 import sys
-
 # Support for keyboard input
 import select
 import termios
 import tty
-
 # For serialization/deserialization of objects
 import json
 
@@ -23,7 +21,7 @@ callback_queue = Queue.Queue()
 def from_dummy_thread(func_to_call_from_main_thread):
     callback_queue.put(func_to_call_from_main_thread)
 
-    def resetFlag(self):
+    def reset_flag(self):
         self.motor.isInitializeing = False
 
 
@@ -34,13 +32,13 @@ from datetime import datetime
 
 class FanDevice(object):
 
-    def __init__(self, minInputValue, maxInputValue, id, type):
-        self.minInputValue = minInputValue
-        self.maxInputValue = maxInputValue
+    def __init__(self, min_input_value, max_input_value, id, type):
+        self.min_input_value = min_input_value
+        self.max_input_value = max_input_value
         self.id = id
         self.type = type
 
-    def toJson(self):
+    def to_json(self):
         return json.dumps(self, default=lambda o: o.__dict__,
                           sort_keys=True, ensure_ascii=False)
 
@@ -51,36 +49,36 @@ class DeviceController(object):
         self.id = id
         self.devices = devices
 
-    def toJson(self):
+    def to_json(self):
         return json.dumps(self, default=lambda o: o.__dict__,
                           sort_keys=True, ensure_ascii=False)
 
 
 class DeviceControllerRegistrationEvent(object):
 
-    def __init__(self, deviceController):
-        self.deviceController = deviceController
-        self.messageType = "DEVICE_CONTROLLER_REGISTRATION"
+    def __init__(self, device_controller):
+        self.device_controller = device_controller
+        self.message_type = "DEVICE_CONTROLLER_REGISTRATION"
 
-    def toJson(self):
+    def to_json(self):
         return json.dumps(self, default=lambda o: o.__dict__,
                           sort_keys=True, ensure_ascii=False)
 
 
 class FanSpeedChangeEvent(object):
 
-    def __init__(self, device, newSpeed):
+    def __init__(self, device, new_speed):
         self.device = device
-        self.newSpeed = newSpeed
+        self.new_speed = new_speed
 
 
 class DeviceScoreChangeEvent(object):
 
     def __init__(self, device):
         self.device = device
-        self.messageType = "DEVICE_SCORE_CHANGE"
+        self.message_type = "DEVICE_SCORE_CHANGE"
 
-    def toJson(self):
+    def to_json(self):
         return json.dumps(self, default=lambda o: o.__dict__,
                           sort_keys=True, ensure_ascii=False)
 
@@ -94,129 +92,132 @@ class Motor(object):
         self.SCALE_FACTOR = 0.14
         self.MAX_DUTY_PCT = 69
         self.DUTY_CYCLE_STEP = 1
-        self.currentPct = self.MIN_PERCENTAGE
-        self.gpioOut = gpioPinOut
-        GPIO.setup(self.gpioOut, GPIO.OUT)
+        self.current_pct = self.MIN_PERCENTAGE
+        self.gpio_out = gpioPinOut
+        GPIO.setup(self.gpio_out, GPIO.OUT)
 
-        self.pwm = GPIO.PWM(self.gpioOut, 500)
-        self.lastEventDate = datetime.now()
+        self.pwm = GPIO.PWM(self.gpio_out, 500)
+        self.last_event_date = datetime.now()
 
-    def changeSpeed(self, percent):
-        print "GAME: setting pwd on gpio:" + str(self.gpioOut) + " to " + str(self.scalePercentageToDutyCycle(self.currentPct))
-        if not GPIO.input(self.buttonPin):
-            if (self.currentPct > percent):
-                print "..............easing speed down..............."
-                while self.currentPct > percent:
-                    self.currentPct = self.currentPct - 1
+    def change_speed(self, percent):
+        print("GAME: setting pwd on gpio:" + str(self.gpio_out) + " to " + str(self.scale_percentage_to_duty_cycle(self.current_pct)))
+        if not GPIO.input(self.button_pin):
+            if (self.current_pct > percent):
+                print("..............easing speed down...............")
+                while self.current_pct > percent:
+                    self.current_pct = self.current_pct - 1
                     self.pwm.ChangeDutyCycle(
-                        self.scalePercentageToDutyCycle(self.currentPct))
-            elif (self.currentPct < percent):
-                print "..............easing speed up................"
-                while self.currentPct < percent:
-                    self.currentPct = self.currentPct + 1
+                        self.scale_percentage_to_duty_cycle(self.current_pct))
+            elif (self.current_pct < percent):
+                print("..............easing speed up................")
+                while self.current_pct < percent:
+                    self.current_pct = self.current_pct + 1
                     self.pwm.ChangeDutyCycle(
-                        self.scalePercentageToDutyCycle(self.currentPct))
+                        self.scale_percentage_to_duty_cycle(self.current_pct))
 
-            self.currentPct = percent
+            self.current_pct = percent
             self.pwm.ChangeDutyCycle(
-                self.scalePercentageToDutyCycle(self.currentPct))
+                self.scale_percentage_to_duty_cycle(self.current_pct))
         else:
-            if not self.isInitializing:
-                self.isInitializing = True
-                print "call self.rearmESC"
-                threading.Thread(target=self.rearmESC, args=()).start()
+            #		self.initialize()
+            if not self.is_initializing:
+                self.is_initializing = True
+                print("call self.rearm_esc")
+                threading.Thread(target=self.rearm_esc, args=()).start()
 
-    def minSpeed(self):
-        self.changeSpeed(self.MIN_PERCENTAGE)
+    def min_speed(self):
+        self.change_speed(self.MIN_PERCENTAGE)
 
-    def maxSpeed(self):
-        self.changeSpeed(self.MAX_PERCENTAGE)
+    def max_speed(self):
+        self.change_speed(self.MAX_PERCENTAGE)
 
-    def rearmESC(self):
-        print "MOTOR: REARM Initializing motor on gpio:" + str(self.gpioOut)
+    def rearm_esc(self):
+        print("MOTOR: REARM Initializing motor on gpio:" + str(self.gpio_out))
         # The motors will not start spinning until they've exceeded 10% of the
         # possible duty cycle range. This means initialization must be 1 to
         # 100%, and the motors will start spinning at 11%."
-        print "MOTOR: Arming motors, part 1. Moving to 1%"
+        print("MOTOR: Arming motors, part 1. Moving to 1%")
         self.pwm.start(1)
         time.sleep(2)
-        print "MOTOR: Arming motors, part 2. Moving to 100%"
+        print("MOTOR: Arming motors, part 2. Moving to 100%")
         self.pwm.ChangeDutyCycle(100)
         time.sleep(2)
-        print "MOTOR: Arming done. Moving to 1%"
+        print("MOTOR: Arming done. Moving to 1%")
         self.pwm.ChangeDutyCycle(1)
         time.sleep(2)
-        self.isInitializing = False
-        print "MOTOR: Motor on gpio " + str(self.gpioOut) + " Ready for action"
-        from_dummy_thread(lambda: resetFlag())
+#      print "MOTOR: Setting duty cycle to " + str(40)
+#      self.pwm.ChangeDutyCycle(40)
+#      self.current_pct = self.MIN_PERCENTAGE
+        self.is_initializing = False
+        print("MOTOR: Motor on gpio " + str(self.gpio_out) + " Ready for action")
+        from_dummy_thread(lambda: reset_flag())
 
     def initialize(self):
-        print "MOTOR: Initializing motor on gpio:" + str(self.gpioOut)
+        print("MOTOR: Initializing motor on gpio:" + str(self.gpio_out))
         # The motors will not start spinning until they've exceeded 10% of the
         # possible duty cycle range. This means initialization must be 1 to
         # 100%, and the motors will start spinning at 11%."
-        print "MOTOR: Arming motors, part 1. Moving to 1%"
+        print("MOTOR: Arming motors, part 1. Moving to 1%")
         self.pwm.start(1)
         time.sleep(2)
-        print "MOTOR: Arming motors, part 2. Moving to 100%"
+        print("MOTOR: Arming motors, part 2. Moving to 100%")
         self.pwm.ChangeDutyCycle(100)
         time.sleep(2)
-        print "MOTOR: Arming done. Moving to 1%"
+        print("MOTOR: Arming done. Moving to 1%")
         self.pwm.ChangeDutyCycle(1)
         time.sleep(5)
-        print "MOTOR: Setting duty cycle to " + str(40)
+        print("MOTOR: Setting duty cycle to " + str(40))
         self.pwm.ChangeDutyCycle(40)
-        self.currentPct = self.MIN_PERCENTAGE
-        self.isInitializing = False
-        print "MOTOR: Motor on gpio " + str(self.gpioOut) + " Ready for action"
+        self.current_pct = self.MIN_PERCENTAGE
+        self.is_initializing = False
+        print("MOTOR: Motor on gpio " + str(self.gpio_out) + " Ready for action")
 
-    def scalePercentageToDutyCycle(self, percentage):
+    def scale_percentage_to_duty_cycle(self, percentage):
         return 50 + (percentage * 0.22)
 
     def shutdown(self):
-        print "MOTOR: Shutting down motor on gpio:" + str(self.gpioOut)
+        print("MOTOR: Shutting down motor on gpio:" + str(self.gpio_out))
         self.pwm.stop()
-        GPIO.cleanup(self.gpioOut)
+        GPIO.cleanup(self.gpio_out)
 
 
 class PlaySide(object):
 
-    def __init__(self, motor, fanDevice, pirScorePin, buttonPin):
+    def __init__(self, motor, fan_device, pir_score_pin, button_pin):
         self.motor = motor
-        self.fanDevice = fanDevice
-        self.pirScorePin = pirScorePin
-        self.motor.buttonPin = buttonPin
+        self.fan_device = fan_device
+        self.pir_score_pin = pir_score_pin
+        self.motor.button_pin = button_pin
 
-        print "GAME: setting up pir on pin:" + str(self.pirScorePin)
-        GPIO.setup(self.pirScorePin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        print("GAME: setting up pir on pin:" + str(self.pir_score_pin))
+        GPIO.setup(self.pir_score_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         # The PIR sensor has its own debouncing resistor. Its minimum possible
         # duration is 2500ms.
-        GPIO.add_event_detect(self.pirScorePin, GPIO.FALLING,
-                              callback=self.scoreChangeSensedEvent, bouncetime=2500)
+        GPIO.add_event_detect(self.pir_score_pin, GPIO.FALLING,
+                              callback=self.score_change_sensed_event, bouncetime=2500)
 
-    def scoreChangeSensedEvent(self, channel):
-        print "GAME: score changed " + str(channel)
-        scoreChanged(self)
+    def score_change_sensed_event(self, channel):
+        print("GAME: score changed " + str(channel))
+        score_changed(self)
 
     def initalize(self):
         self.motor.initialize()
 
 
-
-def keyboardInputAvailable():
+def keyboard_input_available():
     return select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
 
 
 def shutdown():
-    MOTORS[0].changeSpeed(MOTORS[0].MIN_PERCENTAGE)
-    MOTORS[1].changeSpeed(MOTORS[1].MIN_PERCENTAGE)
+    MOTORS[0].change_speed(MOTORS[0].MIN_PERCENTAGE)
+    MOTORS[1].change_speed(MOTORS[1].MIN_PERCENTAGE)
     MOTORS[0].shutdown()
     MOTORS[1].shutdown()
     sys.exit()
 
 
-def scoreChanged(playSide):
-    sendWebsocketMessage(DeviceScoreChangeEvent(playSide.fanDevice))
+def score_changed(playSide):
+    send_websocket_message(DeviceScoreChangeEvent(playSide.fan_device))
 
 GPIO.setmode(GPIO.BCM)
 
@@ -233,7 +234,7 @@ MOTORS = [Motor(GPIO_PIN_OUT_1), Motor(GPIO_PIN_OUT_2)]
 fans = [FanDevice(2, MOTORS[0].MAX_PERCENTAGE, "0", "fan"),
         FanDevice(9, MOTORS[1].MAX_PERCENTAGE, "1", "fan")]
 
-deviceControllerConfig = DeviceController("0", fans)
+device_controller_config = DeviceController("0", fans)
 
 # setup switches, gpio 25 on side 1, gpio 8 on side 2
 GPIO.setup(GPIO_SWITCH_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -242,72 +243,78 @@ GPIO.setup(GPIO_SWITCH_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 PLAY_SIDES = [PlaySide(MOTORS[0], fans[0], GPIO_PIN_PIR_1, GPIO_SWITCH_1), PlaySide(
     MOTORS[1], fans[1], GPIO_PIN_PIR_2, GPIO_SWITCH_2)]
 
+
 try:
-    print "INIT: starting gpio version:" + GPIO.VERSION
+    print("INIT: starting gpio version:" + GPIO.VERSION)
     server_socket = None
     PLAY_SIDES[0].motor.initialize()
     PLAY_SIDES[1].motor.initialize()
 
-    def emergencyStop():
+    def emergency_stop():
         now = datetime.now()
         for x in range(0, len(MOTORS)):
-            if PLAY_SIDES[x].motor.currentPct > PLAY_SIDES[x].motor.MIN_PERCENTAGE and (now - PLAY_SIDES[x].motor.lastEventDate).seconds >= 10:
-                print "No speed events received for Play Side " + str(x) + " in > 10 seconds, dropping to min speed"
+            if PLAY_SIDES[x].motor.current_pct > PLAY_SIDES[x].motor.MIN_PERCENTAGE and (now - PLAY_SIDES[x].motor.last_event_date).seconds >= 10:
+                print("No speed events received for Play Side " + str(x) + " in > 10 seconds, dropping to min speed")
                 PLAY_SIDES[x].motor.minSpeed()
+        # Reset the timer so this method will run again in 11 seconds
+#    Timer(11.0, emergency_stop).start()
 
-    def parseJsonToObject(json):
-        if 'messageType' in json:
-            if json['messageType'] == 'FAN_SPEED_CHANGE':
-                print "Fan speed change rec'd"
-                device = parseJsonToObject(json.loads(json['device']))
-                return FanSpeedChangeEvent(device, json['newSpeed'])
+#  Timer(11.0, emergency_stop).start()
+
+    def parse_json_to_object(json):
+        if 'message_type' in json:
+            if json['message_type'] == 'FAN_SPEED_CHANGE':
+                print("Fan speed change rec'd")
+                device = parse_json_to_object(json.loads(json['device']))
+                return FanSpeedChangeEvent(device, json['new_speed'])
         elif 'fan' in json:
             if json['type'] == 'fan':
-                return FanDevice(json['minInputValue'], json['maxInputValue'], json['id'], json['type'])
+                return FanDevice(json['min_input_value'], json['max_input_value'], json['id'], json['type'])
         return json
 
     def on_message(ws, message):
-        print "SOCKET: Rec'd message: " + message
+        print("SOCKET: Rec'd message: " + message)
+        #fan_speed_change_event = json.loads(message, object_hook=parse_json_to_object)
         dic = json.loads(message)
         dic['device'] = FanDevice(**dic['device'])
-        fanSpeedChangeEvent = FanSpeedChangeEvent(**dic)
-        print "SOCKET: New value: " + str(fanSpeedChangeEvent.newSpeed)
-        fanId = int(fanSpeedChangeEvent.device.id)
-        print "Fan ID is " + fanSpeedChangeEvent.device.id
-        newValue = float(fanSpeedChangeEvent.newSpeed)
-        PLAY_SIDES[fanId].motor.changeSpeed(newValue)
-        if newValue > PLAY_SIDES[fanId].motor.MIN_PERCENTAGE:
-            PLAY_SIDES[fanId].motor.lastEventDate = datetime.now()
+        fan_speed_change_event = FanSpeedChangeEvent(**dic)
+        print("SOCKET: New value: " + str(fan_speed_change_event.new_speed))
+        fan_id = int(fan_speed_change_event.device.id)
+        print("Fan ID is " + fan_speed_change_event.device.id)
+        new_value = float(fan_speed_change_event.new_speed)
+        PLAY_SIDES[fan_id].motor.change_speed(new_value)
+        if new_value > PLAY_SIDES[fan_id].motor.MIN_PERCENTAGE:
+            PLAY_SIDES[fan_id].motor.last_event_date = datetime.now()
 
     def on_error(ws, error):
-        print "SOCKET: Socket error: " + str(error)
+        print("SOCKET: Socket error: " + str(error))
 
     def on_close(ws):
-        print "SOCKET: ### socket closed ###"
+        print("SOCKET: ### socket closed ###")
         PLAY_SIDES[0].motor.minSpeed()
         PLAY_SIDES[1].motor.minSpeed()
 
     def on_open(ws):
-        print "SOCKET: Socket opened"
+        print("SOCKET: Socket opened")
         global server_socket
         server_socket = ws
         # Register this device controller and its devices
-        registrationMessage = DeviceControllerRegistrationEvent(
-            deviceControllerConfig)
-        sendWebsocketMessage(registrationMessage)
+        registration_message = DeviceControllerRegistrationEvent(
+            device_controller_config)
+        send_websocket_message(registration_message)
 
-    def sendWebsocketMessage(messageObject):
+    def send_websocket_message(messageObject):
         if server_socket == None:
-            print "SOCKET: Attempted to send message but web socket is not open!"
+            print("SOCKET: Attempted to send message but web socket is not open!")
 
         if server_socket != None:
-            msg = messageObject.toJson().encode('utf8')
-            print "SOCKET: Sending message through socket: " + msg
+            msg = messageObject.to_json().encode('utf8')
+            print("SOCKET: Sending message through socket: " + msg)
             server_socket.send(msg)
 
     if __name__ == "__main__":
         # Loop for REAL forever
-        print "SOCKET: Connecting to websocket server..."
+        print("SOCKET: Connecting to websocket server...")
         while 1:
             try:
                 websocket.enableTrace(True)
@@ -324,16 +331,16 @@ try:
                 ws.run_forever()
             except:
                 e = sys.exc_info()[1]
-                print e
-                print "SOCKET: Reconnecting..."
+                print(e)
+                print("SOCKET: Reconnecting...")
                 time.sleep(20)
 
 except KeyboardInterrupt:
-    print "GAME: keyboard interrupt shutting down"
+    print("GAME: keyboard interrupt shutting down")
     PLAY_SIDES[0].motor.shutdown()
     PLAY_SIDES[1].motor.shutdown()
 finally:
     shutdown()
 
-print "GAME: final shutdown and cleanup"
+print("GAME: final shutdown and cleanup")
 shutdown()
