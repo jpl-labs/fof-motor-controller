@@ -1,25 +1,17 @@
 """Main module to control the fan motors in the fans of fury game."""
 
-import RPi.GPIO as GPIO
 import time
 import sys
-# Support for keyboard input
 import select
-import termios
-import tty
-# For serialization/deserialization of objects
 import json
-
-# Websocket support
-import websocket
-
-# threading support
 import Queue
 import threading
-
-# Project configuration
 import configparser
 import config as cfg
+from datetime import datetime
+
+import websocket
+import RPi.GPIO as GPIO
 
 cfg = configparser.ConfigParser()
 cfg.read('config.ini')
@@ -32,11 +24,6 @@ def from_dummy_thread(func_to_call_from_main_thread):
 
     def reset_flag(self):
         self.motor.isInitializeing = False
-
-
-# Support for emergency shutoff loop
-from threading import Timer
-from datetime import datetime
 
 
 class FanDevice(object):
