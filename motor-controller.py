@@ -1,3 +1,5 @@
+"""Main module to control the fan motors in the fans of fury game."""
+
 import RPi.GPIO as GPIO
 import time
 import sys
@@ -10,7 +12,6 @@ import json
 
 # Websocket support
 import websocket
-import thread
 
 # threading support
 import Queue
@@ -265,7 +266,8 @@ try:
         now = datetime.now()
         for x in range(0, len(MOTORS)):
             if PLAY_SIDES[x].motor.current_pct > PLAY_SIDES[x].motor.MIN_PERCENTAGE and (now - PLAY_SIDES[x].motor.last_event_date).seconds >= 10:
-                print('No speed events received for Play Side ' + str(x) + ' in > 10 seconds, dropping to min speed')
+                print('No speed events received for Play Side ' +
+                      str(x) + ' in > 10 seconds, dropping to min speed')
                 PLAY_SIDES[x].motor.minSpeed()
         # Reset the timer so this method will run again in 11 seconds
 #    Timer(11.0, emergency_stop).start()
