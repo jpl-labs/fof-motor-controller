@@ -322,7 +322,7 @@ def send_websocket_message(messageObject):
         print('SOCKET: Sending message through socket: ' + msg)
         server_socket.send(msg)
 
-if __name__ == '__main__':
+def main():
     # Loop for REAL forever
     print('SOCKET: Connecting to websocket server...')
     while 1:
@@ -347,3 +347,6 @@ if __name__ == '__main__':
             print(e)
             print('SOCKET: Reconnecting...')
             time.sleep(20)
+
+if __name__ == '__main__':
+    main()
