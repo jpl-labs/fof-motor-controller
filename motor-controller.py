@@ -2,6 +2,7 @@
 
 import time
 import sys
+import signal
 import select
 import json
 import Queue
@@ -208,6 +209,7 @@ def keyboard_input_available():
 
 
 def shutdown():
+    print('GAME: shutting down...')
     MOTORS[0].change_speed(MOTORS[0].MIN_PERCENTAGE)
     MOTORS[1].change_speed(MOTORS[1].MIN_PERCENTAGE)
     MOTORS[0].shutdown()
@@ -217,6 +219,13 @@ def shutdown():
 
 def score_changed(playSide):
     send_websocket_message(DeviceScoreChangeEvent(playSide.fan_device))
+
+
+def sigterm_handler(signum, frame):
+    print('GAME: received sigterm')
+    shutdown()
+
+signal.signal(signal.SIGTERM, sigterm_handler)
 
 GPIO.setmode(GPIO.BCM)
 
@@ -242,105 +251,99 @@ GPIO.setup(GPIO_SWITCH_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 PLAY_SIDES = [PlaySide(MOTORS[0], fans[0], GPIO_PIN_PIR_1, GPIO_SWITCH_1), PlaySide(
     MOTORS[1], fans[1], GPIO_PIN_PIR_2, GPIO_SWITCH_2)]
 
+print('INIT: starting gpio version:' + GPIO.VERSION)
+server_socket = None
+PLAY_SIDES[0].motor.initialize()
+PLAY_SIDES[1].motor.initialize()
 
-try:
-    print('INIT: starting gpio version:' + GPIO.VERSION)
-    server_socket = None
-    PLAY_SIDES[0].motor.initialize()
-    PLAY_SIDES[1].motor.initialize()
 
-    def emergency_stop():
-        now = datetime.now()
-        for x in range(0, len(MOTORS)):
-            if PLAY_SIDES[x].motor.current_pct > PLAY_SIDES[x].motor.MIN_PERCENTAGE and (now - PLAY_SIDES[x].motor.last_event_date).seconds >= 10:
-                print('No speed events received for Play Side ' +
-                      str(x) + ' in > 10 seconds, dropping to min speed')
-                PLAY_SIDES[x].motor.minSpeed()
-        # Reset the timer so this method will run again in 11 seconds
-#    Timer(11.0, emergency_stop).start()
+def emergency_stop():
+    now = datetime.now()
+    for x in range(0, len(MOTORS)):
+        if PLAY_SIDES[x].motor.current_pct > PLAY_SIDES[x].motor.MIN_PERCENTAGE and (now - PLAY_SIDES[x].motor.last_event_date).seconds >= 10:
+            print('No speed events received for Play Side ' +
+                  str(x) + ' in > 10 seconds, dropping to min speed')
+            PLAY_SIDES[x].motor.minSpeed()
 
-#  Timer(11.0, emergency_stop).start()
 
-    def parse_json_to_object(json):
-        if 'message_type' in json:
-            if json['message_type'] == 'FAN_SPEED_CHANGE':
-                print('Fan speed change rec\'d')
-                device = parse_json_to_object(json.loads(json['device']))
-                return FanSpeedChangeEvent(device, json['new_speed'])
-        elif 'fan' in json:
-            if json['type'] == 'fan':
-                return FanDevice(json['min_input_value'], json['max_input_value'], json['id'], json['type'])
-        return json
+def parse_json_to_object(json):
+    if 'message_type' in json:
+        if json['message_type'] == 'FAN_SPEED_CHANGE':
+            print('Fan speed change rec\'d')
+            device = parse_json_to_object(json.loads(json['device']))
+            return FanSpeedChangeEvent(device, json['new_speed'])
+    elif 'fan' in json:
+        if json['type'] == 'fan':
+            return FanDevice(json['min_input_value'], json['max_input_value'], json['id'], json['type'])
+    return json
 
-    def on_message(ws, message):
-        print('SOCKET: Rec\'d message: ' + message)
-        #fan_speed_change_event = json.loads(message, object_hook=parse_json_to_object)
-        dic = json.loads(message)
-        dic['device'] = FanDevice(**dic['device'])
-        fan_speed_change_event = FanSpeedChangeEvent(**dic)
-        print('SOCKET: New value: ' + str(fan_speed_change_event.new_speed))
-        fan_id = int(fan_speed_change_event.device.id)
-        print('Fan ID is ' + fan_speed_change_event.device.id)
-        new_value = float(fan_speed_change_event.new_speed)
-        PLAY_SIDES[fan_id].motor.change_speed(new_value)
-        if new_value > PLAY_SIDES[fan_id].motor.MIN_PERCENTAGE:
-            PLAY_SIDES[fan_id].motor.last_event_date = datetime.now()
 
-    def on_error(ws, error):
-        print('SOCKET: Socket error: ' + str(error))
+def on_message(ws, message):
+    print('SOCKET: Rec\'d message: ' + message)
+    #fan_speed_change_event = json.loads(message, object_hook=parse_json_to_object)
+    dic = json.loads(message)
+    dic['device'] = FanDevice(**dic['device'])
+    fan_speed_change_event = FanSpeedChangeEvent(**dic)
+    print('SOCKET: New value: ' + str(fan_speed_change_event.new_speed))
+    fan_id = int(fan_speed_change_event.device.id)
+    print('Fan ID is ' + fan_speed_change_event.device.id)
+    new_value = float(fan_speed_change_event.new_speed)
+    PLAY_SIDES[fan_id].motor.change_speed(new_value)
+    if new_value > PLAY_SIDES[fan_id].motor.MIN_PERCENTAGE:
+        PLAY_SIDES[fan_id].motor.last_event_date = datetime.now()
 
-    def on_close(ws):
-        print('SOCKET: ### socket closed ###')
-        PLAY_SIDES[0].motor.minSpeed()
-        PLAY_SIDES[1].motor.minSpeed()
 
-    def on_open(ws):
-        print('SOCKET: Socket opened')
-        global server_socket
-        server_socket = ws
-        # Register this device controller and its devices
-        registration_message = DeviceControllerRegistrationEvent(
-            device_controller_config)
-        send_websocket_message(registration_message)
+def on_error(ws, error):
+    print('SOCKET: Socket error: ' + str(error))
 
-    def send_websocket_message(messageObject):
-        if server_socket == None:
-            print('SOCKET: Attempted to send message but web socket is not open!')
 
-        if server_socket != None:
-            msg = messageObject.to_json().encode('utf8')
-            print('SOCKET: Sending message through socket: ' + msg)
-            server_socket.send(msg)
+def on_close(ws):
+    print('SOCKET: ### socket closed ###')
+    PLAY_SIDES[0].motor.minSpeed()
+    PLAY_SIDES[1].motor.minSpeed()
 
-    if __name__ == '__main__':
-        # Loop for REAL forever
-        print('SOCKET: Connecting to websocket server...')
-        while 1:
-            try:
-                websocket.enableTrace(True)
-                # Socket.io (underlying framework for websocket-client) requires '/websocket/' appended to the target URL so it can identify it as a websocket URL. Apparently ws:// protocol wasn't enough?
-                # sp - my LAN IP is 192.168.21.41
-                # sp - my wifi IP is 192.168.21.26
-                # sp - server laptop is 192.168.21.36
-                ws = websocket.WebSocketApp('ws://192.168.31.99:8080/ws/fancontroller/websocket',
-                                            on_message=on_message,
-                                            on_error=on_error,
-                                            on_close=on_close)
-                ws.on_open = on_open
-                # 'run_forever' is a lie, like the cake. It actually exits when all sockets have closed.
-                ws.run_forever()
-            except:
-                e = sys.exc_info()[1]
-                print(e)
-                print('SOCKET: Reconnecting...')
-                time.sleep(20)
 
-except KeyboardInterrupt:
-    print('GAME: keyboard interrupt shutting down')
-    PLAY_SIDES[0].motor.shutdown()
-    PLAY_SIDES[1].motor.shutdown()
-finally:
-    shutdown()
+def on_open(ws):
+    print('SOCKET: Socket opened')
+    global server_socket
+    server_socket = ws
+    # Register this device controller and its devices
+    registration_message = DeviceControllerRegistrationEvent(
+        device_controller_config)
+    send_websocket_message(registration_message)
 
-print('GAME: final shutdown and cleanup')
-shutdown()
+
+def send_websocket_message(messageObject):
+    if server_socket == None:
+        print('SOCKET: Attempted to send message but web socket is not open!')
+
+    if server_socket != None:
+        msg = messageObject.to_json().encode('utf8')
+        print('SOCKET: Sending message through socket: ' + msg)
+        server_socket.send(msg)
+
+if __name__ == '__main__':
+    # Loop for REAL forever
+    print('SOCKET: Connecting to websocket server...')
+    while 1:
+        try:
+            websocket.enableTrace(True)
+            # Socket.io (underlying framework for websocket-client) requires '/websocket/' appended to the target URL so it can identify it as a websocket URL. Apparently ws:// protocol wasn't enough?
+            # sp - my LAN IP is 192.168.21.41
+            # sp - my wifi IP is 192.168.21.26
+            # sp - server laptop is 192.168.21.36
+            ws = websocket.WebSocketApp('ws://192.168.31.99:8080/ws/fancontroller/websocket',
+                                        on_message=on_message,
+                                        on_error=on_error,
+                                        on_close=on_close)
+            ws.on_open = on_open
+            # 'run_forever' is a lie, like the cake. It actually exits when all sockets have closed.
+            ws.run_forever()
+        except KeyboardInterrupt:
+            print('GAME: received keyboard interrupt.')
+            shutdown()
+        except:
+            e = sys.exc_info()[1]
+            print(e)
+            print('SOCKET: Reconnecting...')
+            time.sleep(20)
