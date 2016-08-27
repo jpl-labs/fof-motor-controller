@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-import RPi.GPIO as GPIO
+from gpiocrust import InputPin
 
 from .motor import Motor
 from .fan_device import FanDevice
@@ -12,8 +12,6 @@ from .play_side import PlaySide
 class FansOfFury(object):
 
     def __init__(self, gameConfig):
-        GPIO.setmode(GPIO.BCM)
-
         GPIO_PIN_OUT_1 = gameConfig['gpio']['pin-out-1']
         GPIO_PIN_OUT_2 = gameConfig['gpio']['pin-out-2']
         GPIO_PIN_PIR_1 = gameConfig['gpio']['pin-pir-1']
@@ -30,12 +28,10 @@ class FansOfFury(object):
 
         self.device_controller_config = DeviceController('0', self.fans)
 
-        # setup switches, gpio 25 on side 1, gpio 8 on side 2
-        GPIO.setup(GPIO_SWITCH_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(GPIO_SWITCH_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        self.switches = [InputPin(GPIO_SWITCH_1), InputPin(GPIO_SWITCH_2)]
 
-        self.PLAY_SIDES = [PlaySide(self.MOTORS[0], self.fans[0], GPIO_PIN_PIR_1, GPIO_SWITCH_1), PlaySide(
-            self.MOTORS[1], self.fans[1], GPIO_PIN_PIR_2, GPIO_SWITCH_2)]
+        self.PLAY_SIDES = [PlaySide(self.MOTORS[0], self.fans[0], GPIO_PIN_PIR_1, self.switches[0]), PlaySide(
+            self.MOTORS[1], self.fans[1], GPIO_PIN_PIR_2, self.switches[1])]
 
     def __enter__(self):
         return self
@@ -54,3 +50,4 @@ class FansOfFury(object):
         for motor in self.MOTORS:
             motor.min_speed()
             motor.__exit__(*args)
+

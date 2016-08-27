@@ -6,6 +6,7 @@ import signal
 import configparser
 import config as cfg
 
+from gpiocrust import Header, PinMode
 from .web_socket_handler import WebSocketHandler
 
 cfg = configparser.ConfigParser()
@@ -28,8 +29,9 @@ def main(args=None):
     print('SOCKET: Connecting to websocket server...')
     while 1:
         try:
-            with WebSocketHandler(cfg) as socket:
-                socket.run()
+            with Header(mode=PinMode.BCM) as header:
+                with WebSocketHandler(cfg) as socket:
+                    socket.run()
         except KeyboardInterrupt:
             print('GAME: received keyboard interrupt.')
             socket.server_socket.close()

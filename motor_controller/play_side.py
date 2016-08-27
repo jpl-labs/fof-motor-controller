@@ -1,4 +1,4 @@
-import RPi.GPIO as GPIO
+from gpiocrust import InputPin
 
 class PlaySide(object):
 
@@ -7,17 +7,12 @@ class PlaySide(object):
         self.fan_device = fan_device
         self.pir_score_pin = pir_score_pin
         self.motor.button_pin = button_pin
+        InputPin(self.pir_score_pin, callback=self.score_change_sensed_event)
 
-        print('GAME: setting up pir on pin:' + str(self.pir_score_pin))
-        GPIO.setup(self.pir_score_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        # The PIR sensor has its own debouncing resistor. Its minimum possible
-        # duration is 2500ms.
-        GPIO.add_event_detect(self.pir_score_pin, GPIO.FALLING,
-                              callback=self.score_change_sensed_event, bouncetime=2500)
 
     def score_change_sensed_event(self, channel):
         print('GAME: score changed ' + str(channel))
-        score_changed(self)
+        self.score_changed()
 
     def score_changed(playSide):
         send_websocket_message(DeviceScoreChangeEvent(playSide.fan_device))
