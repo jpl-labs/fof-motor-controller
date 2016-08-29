@@ -4,9 +4,10 @@ import time
 import sys
 import signal
 import configparser
-import config as cfg
+#import config as cfg
 
 from gpiocrust import Header, PinMode
+#from gpiocrust import PinMode
 from .web_socket_handler import WebSocketHandler
 
 cfg = configparser.ConfigParser()
@@ -29,7 +30,7 @@ def main(args=None):
     print('SOCKET: Connecting to websocket server...')
     while 1:
         try:
-            with Header(mode=PinMode.BCM) as header:
+            with Header(PinMode.BCM) as header:
                 with WebSocketHandler(cfg) as socket:
                     socket.run()
         except KeyboardInterrupt:

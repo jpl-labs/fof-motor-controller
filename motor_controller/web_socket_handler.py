@@ -48,7 +48,7 @@ class WebSocketHandler(object):
         if self.server_socket != None:
             msg = json.dumps(messageObject, default=lambda o: o.__dict__,
                              sort_keys=True, ensure_ascii=False).encode('utf8')
-            print('SOCKET: Sending message through socket: ' + msg)
+            print('SOCKET: Sending message through socket: {}'.format(msg))
             self.server_socket.send(msg)
 
     def on_error(self, ws, error):
@@ -60,7 +60,7 @@ class WebSocketHandler(object):
 
     def on_open(self, ws):
         print('SOCKET: Socket opened')
-
+        print(self.config)
         self.fof = FansOfFury(self.config)
         self.server_socket = ws
 

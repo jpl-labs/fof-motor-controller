@@ -12,13 +12,16 @@ from .play_side import PlaySide
 class FansOfFury(object):
 
     def __init__(self, gameConfig):
-        GPIO_PIN_OUT_1 = gameConfig['gpio']['pin-out-1']
-        GPIO_PIN_OUT_2 = gameConfig['gpio']['pin-out-2']
-        GPIO_PIN_PIR_1 = gameConfig['gpio']['pin-pir-1']
-        GPIO_PIN_PIR_2 = gameConfig['gpio']['pin-pir-2']
+        print(gameConfig)
+        print(gameConfig.sections())
+        gpioconfig = gameConfig['gpio']
+        GPIO_PIN_OUT_1 = gpioconfig['pin_out_1']
+        GPIO_PIN_OUT_2 = gpioconfig['pin_out_2']
+        GPIO_PIN_PIR_1 = gameConfig['gpio']['pin_pir_1']
+        GPIO_PIN_PIR_2 = gameConfig['gpio']['pin_pir_2']
 
-        GPIO_SWITCH_1 = gameConfig['gpio']['switch-1']
-        GPIO_SWITCH_2 = gameConfig['gpio']['switch-2']
+        GPIO_SWITCH_1 = gameConfig['gpio']['switch_1']
+        GPIO_SWITCH_2 = gameConfig['gpio']['switch_2']
 
         self.MOTORS = [Motor(GPIO_PIN_OUT_1, gameConfig['motor']),
                        Motor(GPIO_PIN_OUT_2, gameConfig['motor'])]
