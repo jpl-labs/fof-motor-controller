@@ -4,15 +4,16 @@ import time
 import sys
 import signal
 import configparser
-#import config as cfg
+import logging
 
 from gpiocrust import Header, PinMode
-#from gpiocrust import PinMode
+
 from .web_socket_handler import WebSocketHandler
 
 cfg = configparser.ConfigParser()
 cfg.read('config.ini')
 
+logging.basicConfig(level=logging.DEBUG)
 
 def main(args=None):
     """The main routine."""
@@ -20,27 +21,27 @@ def main(args=None):
         args = sys.argv[1:]
 
     def sigterm_handler(signum, frame):
-        print('GAME: received sigterm')
+        logging.info('GAME: received sigterm')
         socket.server_socket.close()
         sys.exit()
 
     signal.signal(signal.SIGTERM, sigterm_handler)
 
     # Loop for REAL forever
-    print('SOCKET: Connecting to websocket server...')
+    logging.debug('SOCKET: Connecting to websocket server...')
     while 1:
         try:
-            with Header(PinMode.BCM) as header:
+            with Header(mode=PinMode.BCM) as header:
                 with WebSocketHandler(cfg) as socket:
                     socket.run()
         except KeyboardInterrupt:
-            print('GAME: received keyboard interrupt.')
+            logging.info('GAME: received keyboard interrupt.')
             socket.server_socket.close()
             sys.exit()
         except:
             exception = sys.exc_info()[1]
-            print(exception)
-            print('SOCKET: Reconnecting...')
+            logging.error(exception)
+            logging.error('SOCKET: Reconnecting...')
             time.sleep(20)
 
 if __name__ == "__main__":

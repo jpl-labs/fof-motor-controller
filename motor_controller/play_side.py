@@ -1,3 +1,5 @@
+import logging
+
 from gpiocrust import InputPin
 
 class PlaySide(object):
@@ -11,7 +13,7 @@ class PlaySide(object):
 
 
     def score_change_sensed_event(self, channel):
-        print('GAME: score changed ' + str(channel))
+        logging.debug('GAME: score changed ' + str(channel))
         self.score_changed()
 
     def score_changed(playSide):

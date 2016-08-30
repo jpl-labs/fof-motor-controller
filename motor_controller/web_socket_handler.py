@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 
 import websocket
@@ -28,13 +29,14 @@ class WebSocketHandler(object):
         self.server_socket.run_forever()
 
     def on_message(self, ws, message):
-        print('SOCKET: Rec\'d message: ' + message)
+        logging.debug('SOCKET: Rec\'d message: ' + message)
         dic = json.loads(message)
         dic['device'] = FanDevice(**dic['device'])
         fan_speed_change_event = FanSpeedChangeEvent(**dic)
-        print('SOCKET: New value: ' + str(fan_speed_change_event.new_speed))
+        logging.debug('SOCKET: New value: ' +
+                      str(fan_speed_change_event.new_speed))
         fan_id = int(fan_speed_change_event.device.id)
-        print('Fan ID is ' + fan_speed_change_event.device.id)
+        logging.debug('Fan ID is ' + fan_speed_change_event.device.id)
         new_value = float(fan_speed_change_event.new_speed)
 
         self.fof.PLAY_SIDES[fan_id].motor.change_speed(new_value)
@@ -43,24 +45,26 @@ class WebSocketHandler(object):
 
     def send_websocket_message(self, messageObject):
         if self.server_socket is None:
-            print('SOCKET: Attempted to send message but web socket is not open!')
+            logging.debug(
+                'SOCKET: Attempted to send message but web socket is not open!')
 
         if self.server_socket != None:
             msg = json.dumps(messageObject, default=lambda o: o.__dict__,
                              sort_keys=True, ensure_ascii=False).encode('utf8')
-            print('SOCKET: Sending message through socket: {}'.format(msg))
+            logging.debug(
+                'SOCKET: Sending message through socket: {}'.format(msg))
             self.server_socket.send(msg)
 
     def on_error(self, ws, error):
-        print('SOCKET: Socket error: ' + str(error))
+        logging.debug('SOCKET: Socket error: ' + str(error))
 
     def on_close(self, ws):
-        print('SOCKET: ### socket closed ###')
+        logging.debug('SOCKET: ### socket closed ###')
         self.__exit__(None, None, None)
 
     def on_open(self, ws):
-        print('SOCKET: Socket opened')
-        print(self.config)
+        logging.debug('SOCKET: Socket opened')
+
         self.fof = FansOfFury(self.config)
         self.server_socket = ws
 

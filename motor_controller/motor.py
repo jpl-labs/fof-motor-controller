@@ -27,7 +27,8 @@ class Motor(object):
         # 100%, and the motors will start spinning at 11%.'
         logging.debug('MOTOR: Arming motors, part 1. Moving to 1%')
 
-        self.pwm = PWMOutputPin(self.gpio_out, frequency=float(motorConfig['pwm_frequency']), value=0.01)
+        self.pwm = PWMOutputPin(self.gpio_out, frequency=float(
+            motorConfig['pwm_frequency']), value=0.01)
 
         time.sleep(2)
         logging.debug('MOTOR: Arming motors, part 2. Moving to 100%')
