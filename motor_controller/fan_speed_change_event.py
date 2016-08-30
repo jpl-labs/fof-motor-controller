@@ -1,5 +1,5 @@
 class FanSpeedChangeEvent(object):
 
-    def __init__(self, device, new_speed):
+    def __init__(self, device, newSpeed):
         self.device = device
-        self.new_speed = new_speed
+        self.newSpeed = newSpeed

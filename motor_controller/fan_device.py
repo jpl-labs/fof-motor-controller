@@ -1,7 +1,7 @@
 class FanDevice(object):
 
-    def __init__(self, min_input_value, max_input_value, id, type):
-        self.min_input_value = min_input_value
-        self.max_input_value = max_input_value
+    def __init__(self, minInputValue, maxInputValue, id, type):
+        self.minInputValue = minInputValue
+        self.maxInputValue = maxInputValue
         self.id = id
         self.type = type
