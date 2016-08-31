@@ -40,8 +40,8 @@ class FansOfFury(object):
         now = datetime.now()
         for x in range(0, len(self.MOTORS)):
             if self.PLAY_SIDES[x].motor.current_pct > self.PLAY_SIDES[x].motor.MIN_PERCENTAGE and (now - self.PLAY_SIDES[x].motor.last_event_date).seconds >= 10:
-                logging.debug('No speed events received for Play Side ' +
-                              str(x) + ' in > 10 seconds, dropping to min speed')
+                logging.debug(
+                    'No speed events received for Play Side %s in > 10 seconds, dropping to min speed', x)
                 self.PLAY_SIDES[x].motor.minSpeed()
 
     def __exit__(self, *args):

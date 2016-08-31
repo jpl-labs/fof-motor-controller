@@ -47,28 +47,22 @@ def main(args=None):
             # Register this device controller and its devices
             registration_message = DeviceControllerRegistrationEvent(
                 self.fof.device_controller_config)
-            #self.send_websocket_message(registration_message)
 
             payload = json.dumps(registration_message, default=lambda o: o.__dict__,
                                  sort_keys=True, ensure_ascii=False).encode('utf8')
-            logging.debug(
-                'SOCKET: Sending message through socket: {}'.format(payload))
+            logging.debug('SOCKET: Sending message through socket: %s', payload)
             self.sendMessage(payload, isBinary=False)
 
         def onMessage(self, payload, isBinary):
             logging.debug('Got message')
             if not isBinary:
-                #res = json.loads(payload.decode('utf8'))
-                #print("Result received: {}".format(res))
-                # self.sendClose()
-
-                logging.debug('SOCKET: Received message: {}'.format(payload))
+                logging.debug('SOCKET: Received message:  %s', payload)
                 dic = json.loads(payload.decode('utf8'))
                 dic['device'] = FanDevice(**dic['device'])
                 fan_speed_change_event = FanSpeedChangeEvent(**dic)
-                logging.debug('SOCKET: New value: {}'.format(fan_speed_change_event.newSpeed))
+                logging.debug('SOCKET: New value: %s', fan_speed_change_event.newSpeed)
                 fan_id = int(fan_speed_change_event.device.id)
-                logging.debug('Fan ID is {}'.format(fan_speed_change_event.device.id))
+                logging.debug('Fan ID is %s', fan_speed_change_event.device.id)
                 new_value = float(fan_speed_change_event.newSpeed)
 
                 self.fof.PLAY_SIDES[fan_id].motor.desired_speed = new_value
