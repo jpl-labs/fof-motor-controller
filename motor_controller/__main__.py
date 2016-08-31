@@ -15,11 +15,12 @@ from .fan_device import FanDevice
 from .fan_speed_change_event import FanSpeedChangeEvent
 from .fans_of_fury import FansOfFury
 from .device_controller_registration_event import DeviceControllerRegistrationEvent
+from .logging_handler import LoggingHandler
 
 CONFIG = configparser.ConfigParser()
 CONFIG.read('config.ini')
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 def main(args=None):
@@ -34,13 +35,14 @@ def main(args=None):
 
     signal.signal(signal.SIGTERM, sigterm_handler)
 
-    class FansOfFuryClientProtocol(WebSocketClientProtocol):
+    class Socket(LoggingHandler, WebSocketClientProtocol):
 
         def __init__(self):
+            super(Socket, self).__init__()
             self.fof = None
 
         def onOpen(self):
-            logging.debug('SOCKET: Socket opened')
+            self.logger.info('Socket opened')
 
             self.fof = FansOfFury(CONFIG)
 
@@ -51,26 +53,25 @@ def main(args=None):
 
             payload = json.dumps(registration_message, default=lambda o: o.__dict__,
                                  sort_keys=True, ensure_ascii=False).encode('utf8')
-            logging.debug(
-                'SOCKET: Sending message through socket: {}'.format(payload))
+            self.logger.debug('Sending message through socket: {}'.format(payload))
             self.sendMessage(payload, isBinary=False)
+            self.logger.info('Sent registration message to server')
 
         def onMessage(self, payload, isBinary):
-            logging.debug('Got message')
+            self.logger.debug('Got message')
             if not isBinary:
                 #res = json.loads(payload.decode('utf8'))
                 #print("Result received: {}".format(res))
                 # self.sendClose()
 
-                logging.debug('SOCKET: Received message: {}'.format(payload))
+                self.logger.debug('Received message: {}'.format(payload))
                 dic = json.loads(payload.decode('utf8'))
                 dic['device'] = FanDevice(**dic['device'])
                 fan_speed_change_event = FanSpeedChangeEvent(**dic)
-                logging.debug('SOCKET: New value: {}'.format(fan_speed_change_event.newSpeed))
+                self.logger.debug('New value: {}'.format(fan_speed_change_event.newSpeed))
                 fan_id = int(fan_speed_change_event.device.id)
-                logging.debug('Fan ID is {}'.format(fan_speed_change_event.device.id))
                 new_value = float(fan_speed_change_event.newSpeed)
-
+                self.logger.info('Received instruction to set fan %s to speed %s', fan_id, new_value)
                 self.fof.PLAY_SIDES[fan_id].motor.desired_speed = new_value
                 if new_value > self.fof.PLAY_SIDES[fan_id].motor.MIN_PERCENTAGE:
                     self.fof.PLAY_SIDES[
@@ -78,13 +79,13 @@ def main(args=None):
 
         def onClose(self, wasClean, code, reason):
             if reason:
-                print(reason)
+                self.logger.warn(reason)
             loop.stop()
 
     with Header(mode=PinMode.BCM) as header:
         factory = WebSocketClientFactory(
             u'ws://192.168.31.99:8080/ws/fancontroller/websocket')
-        factory.protocol = FansOfFuryClientProtocol
+        factory.protocol = Socket
 
         loop = asyncio.get_event_loop()
         coro = loop.create_connection(factory, '192.168.31.99', 8080)

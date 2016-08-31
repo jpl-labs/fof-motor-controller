@@ -5,10 +5,12 @@ from time import sleep
 
 from gpiocrust import PWMOutputPin
 
+from .logging_handler import LoggingHandler
 
-class Motor(object):
+class Motor(LoggingHandler):
 
     def __init__(self, gpioPinOut, motorConfig, speed=None):
+        super(Motor, self).__init__()
         self.MIN_PERCENTAGE = int(motorConfig['min_pct'])
         self.MAX_PERCENTAGE = int(motorConfig['max_pct'])
         self.NEUTRAL_DUTY_CYCLE = motorConfig['neutral_duty_cycle']
@@ -20,21 +22,21 @@ class Motor(object):
 
         self.last_event_date = datetime.now()
 
-        logging.debug(
-            'MOTOR: Initializing motor on gpio:{motor.gpio_out}'.format(motor=self))
+        self.logger.debug('Initializing motor on gpio:%s', self.gpio_out)
+        
         # The motors will not start spinning until they've exceeded 10% of the
         # possible duty cycle range. This means initialization must be 1 to
         # 100%, and the motors will start spinning at 11%.'
-        logging.debug('MOTOR: Arming motors, part 1. Moving to 1%')
+        self.logger.debug('Arming motors, part 1. Moving to 1%')
 
         self.pwm = PWMOutputPin(self.gpio_out, frequency=float(
             motorConfig['pwm_frequency']), value=0.01)
 
         time.sleep(2)
-        logging.debug('MOTOR: Arming motors, part 2. Moving to 100%')
+        self.logger.debug('Arming motors, part 2. Moving to 100%')
         self.pwm.value = 1
         time.sleep(2)
-        logging.debug('MOTOR: Arming done. Moving to 1%')
+        self.logger.debug('Arming done. Moving to 1%')
         self.pwm.value = 0.01
         time.sleep(2)
         self.current_pct = 0
@@ -44,8 +46,7 @@ class Motor(object):
         else:
             self.desired_speed = speed
 
-        logging.debug(
-            'Motor on gpio {motor.gpio_out} ready for action'.format(motor=self))
+        self.logger.info('Motor on gpio {motor.gpio_out} ready for action'.format(motor=self))
 
     def __enter__(self):
         return self
@@ -60,8 +61,7 @@ class Motor(object):
 
     @desired_speed.setter
     def desired_speed(self, percent):
-        logging.debug(
-            'setting pwd on gpio: {motor.gpio_out} to {motor.desired_duty_cycle}'.format(motor=self))
+        self.logger.debug('Setting pwd on gpio: {motor.gpio_out} to {motor.desired_duty_cycle}'.format(motor=self))
 
         while self.current_pct > percent:
             self.current_pct -= 1
@@ -73,7 +73,7 @@ class Motor(object):
             self.pwm.value = self.desired_duty_cycle
             sleep(0.02)
 
-        logging.debug('done setting pwd on gpio: {motor.gpio_out} to {motor.desired_duty_cycle}'.format(
+        self.logger.debug('Done setting pwd on gpio: {motor.gpio_out} to {motor.desired_duty_cycle}'.format(
             motor=self))
 
     def min_speed(self):
@@ -87,5 +87,5 @@ class Motor(object):
         return (0.0022 * self.current_pct) + 0.5
 
     def __exit__(self, exc_type, exc_value, traceback):
-        logging.debug('shutting down motor on gpio:' + str(self.gpio_out))
+        self.logger.debug('Shutting down motor on gpio: %s', self.gpio_out)
         del self.pwm
