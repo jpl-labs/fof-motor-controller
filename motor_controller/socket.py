@@ -8,13 +8,14 @@ from .fan_device import FanDevice
 from .fan_speed_change_event import FanSpeedChangeEvent
 from .device_controller_registration_event import DeviceControllerRegistrationEvent
 from .logging_handler import LoggingHandler
-from .__main__ import fans_of_fury
+#from .__main__ import fans_of_fury
 
 
 class Socket(LoggingHandler, WebSocketClientProtocol):
 
     def __init__(self):
         super(Socket, self).__init__()
+        from .__main__ import fans_of_fury
         self.fof = fans_of_fury
 
     def onOpen(self):

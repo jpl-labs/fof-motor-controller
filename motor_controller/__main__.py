@@ -12,9 +12,8 @@ from .pin_mode import PinMode
 CONFIG = configparser.ConfigParser()
 CONFIG.read('config.ini')
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
-signal.signal(signal.SIGTERM, sigterm_handler)
 
 fans_of_fury = None
 
@@ -23,6 +22,8 @@ def sigterm_handler(signum, frame):
     logging.info('GAME: received sigterm')
     fans_of_fury.stop()
     sys.exit()
+
+signal.signal(signal.SIGTERM, sigterm_handler)
 
 
 if __name__ == "__main__":

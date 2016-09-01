@@ -16,9 +16,10 @@ class PiHeader(LoggingHandler):
         self.used_pins = []
 
     def get_pin(self, pinNumber, pinType):
-        newPin = pinType(self, pinNumber)
-
+        self.logger.debug('Creating pin on gpio %s', pinNumber)
+        newPin = pinType(self, int(pinNumber))
         self.used_pins.append(newPin)
+        return newPin
 
     def __enter__(self):
         return self
@@ -27,12 +28,4 @@ class PiHeader(LoggingHandler):
         return Pin(self, pinNumber)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        del self.pwm
-
-
-class Pin(LoggingHandler):
-
-    def __init__(self, header, pin_number):
-        super(Pin, self).__init__()
-        self.header = header
-        self.pin_number = pin_number
+        self.pi.close()

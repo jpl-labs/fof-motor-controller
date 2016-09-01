@@ -48,7 +48,7 @@ class Motor(LoggingHandler):
             self.desired_speed = speed
 
         self.logger.info(
-            'Motor on gpio {motor.gpio_out} ready for action'.format(motor=self))
+            'Motor on gpio %s ready for action', self.pwm.pin_number)
 
     def __enter__(self):
         return self
@@ -64,7 +64,7 @@ class Motor(LoggingHandler):
     @desired_speed.setter
     def desired_speed(self, percent):
         self.logger.debug(
-            'Setting pwd on gpio: {motor.gpio_out} to {motor.desired_duty_cycle}'.format(motor=self))
+            'Setting pwd on gpio: %s to %s', self.pwm.pin_number, percent)
 
         while self.current_pct > percent:
             self.current_pct -= 1
@@ -76,8 +76,7 @@ class Motor(LoggingHandler):
             self.pwm.value = self.desired_duty_cycle
             sleep(0.02)
 
-        self.logger.debug('Done setting pwd on gpio: {motor.gpio_out} to {motor.desired_duty_cycle}'.format(
-            motor=self))
+        self.logger.debug('Done setting pwd on gpio: %s to %s', self.pwm.pin_number, percent)
 
     def min_speed(self):
         self.desired_speed = self.MIN_PERCENTAGE
