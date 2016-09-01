@@ -24,3 +24,9 @@ class InputPin(Pin, LoggingHandler):
             self._header.pi.set_pull_up_down(self._pin_number, pigpio.PUD_UP)
         else:
             self._header.pi.set_pull_up_down(self._pin_number, pigpio.PUD_DOWN)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._header.pi.set_pull_up_down(self._pin_number, pigpio.PUD_OFF)

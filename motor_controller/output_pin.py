@@ -18,3 +18,9 @@ class OutputPin(Pin, LoggingHandler):
     def value(self, val):
         self._header.pi.write(self._pin_number, val)
         self.logger.debug('Wrote %s to pin %s', val, self._pin_number)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._header.pi.write(self._pin_number, 0)

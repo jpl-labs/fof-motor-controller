@@ -24,8 +24,7 @@ class PiHeader(LoggingHandler):
     def __enter__(self):
         return self
 
-    def __getitem__(self, pinNumber):
-        return Pin(self, pinNumber)
-
     def __exit__(self, exc_type, exc_value, traceback):
-        self.pi.close()
+        for pin in self.used_pins:
+            pin.__exit__()
+        self.pi.stop()

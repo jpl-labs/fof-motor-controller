@@ -33,17 +33,3 @@ class FansOfFury(object):
 
         self.PLAY_SIDES = [PlaySide(self.MOTORS[0], self.fans[0], GPIO_PIN_PIR_1, self.switches[0]), PlaySide(
             self.MOTORS[1], self.fans[1], GPIO_PIN_PIR_2, self.switches[1])]
-
-    def stop(self):
-        self.loop.close()
-
-    def run(self):
-        """The main routine."""
-
-        factory = WebSocketClientFactory(
-            u'ws://192.168.31.99:8080/ws/fancontroller/websocket')
-        factory.protocol = Socket
-
-        coro = self.loop.create_connection(factory, '192.168.31.99', 8080)
-        self.loop.run_until_complete(coro)
-        self.loop.run_forever()
