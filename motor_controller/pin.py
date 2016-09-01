@@ -7,7 +7,7 @@ class Pin(LoggingHandler):
         super(Pin, self).__init__()
 
         self._header = header
-        self._pin_number = pinNumber
+        self._pin_number = int(pinNumber)
 
     @property
     def pin_number(self):

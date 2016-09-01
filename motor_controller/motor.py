@@ -27,7 +27,7 @@ class Motor(LoggingHandler):
         # 100%, and the motors will start spinning at 11%.'
         self.logger.debug('Arming motors, part 1. Moving to 1%')
 
-        self.pwm.frequency=config['pwm_frequency']
+        self.pwm.frequency=int(config['pwm_frequency'])
         self.pwm.range=100
         self.pwm.duty_cycle = 1
 
@@ -68,12 +68,12 @@ class Motor(LoggingHandler):
 
         while self.current_pct > percent:
             self.current_pct -= 1
-            self.pwm.value = self.desired_duty_cycle
+            self.pwm.duty_cycle = self.desired_duty_cycle
             sleep(0.02)
 
         while self.current_pct < percent:
             self.current_pct += 1
-            self.pwm.value = self.desired_duty_cycle
+            self.pwm.duty_cycle = self.desired_duty_cycle
             sleep(0.02)
 
         self.logger.debug('Done setting pwd on gpio: %s to %s', self.pwm.pin_number, percent)
@@ -90,4 +90,4 @@ class Motor(LoggingHandler):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.logger.debug('Shutting down motor on gpio: %s', self.pwm.pin_number)
-        del self.pwm
+        #del self.pwm

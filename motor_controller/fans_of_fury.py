@@ -7,7 +7,7 @@ from .device_controller import DeviceController
 from .play_side import PlaySide
 from .input_pin import InputPin
 from .hardware_pwm_pin import HardwarePWMPin
-from .socket import Socket
+#from .socket import Socket
 
 
 class FansOfFury(object):

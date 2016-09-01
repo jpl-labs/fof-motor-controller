@@ -21,7 +21,7 @@ from .pin_mode import PinMode
 CONFIG = configparser.ConfigParser()
 CONFIG.read('config.ini')
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 def main(args=None):

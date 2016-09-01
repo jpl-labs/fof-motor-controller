@@ -26,5 +26,5 @@ class PiHeader(LoggingHandler):
 
     def __exit__(self, exc_type, exc_value, traceback):
         for pin in self.used_pins:
-            pin.__exit__()
+            pin.__exit__(exc_type, exc_value, traceback)
         self.pi.stop()

@@ -42,7 +42,7 @@ class HardwarePWMPin(Pin, LoggingHandler):
 
     @property
     def actual_duty_cycle(self):
-        return self.duty_cycle * self._range_multiplier
+        return int(self.duty_cycle * self._range_multiplier)
 
     def __enter__(self):
         return self
