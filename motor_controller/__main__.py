@@ -49,26 +49,21 @@ def main(args=None):
             # Register this device controller and its devices
             registration_message = DeviceControllerRegistrationEvent(
                 self.fof.device_controller_config)
-            #self.send_websocket_message(registration_message)
 
             payload = json.dumps(registration_message, default=lambda o: o.__dict__,
                                  sort_keys=True, ensure_ascii=False).encode('utf8')
-            self.logger.debug('Sending message through socket: {}'.format(payload))
+
+            self.logger.debug('Sending message through socket: %s', payload)
             self.sendMessage(payload, isBinary=False)
             self.logger.info('Sent registration message to server')
 
         def onMessage(self, payload, isBinary):
             self.logger.debug('Got message')
             if not isBinary:
-                #res = json.loads(payload.decode('utf8'))
-                #print("Result received: {}".format(res))
-                # self.sendClose()
-
-                self.logger.debug('Received message: {}'.format(payload))
+                self.logger.debug('Received message:  %s', payload)
                 dic = json.loads(payload.decode('utf8'))
                 dic['device'] = FanDevice(**dic['device'])
                 fan_speed_change_event = FanSpeedChangeEvent(**dic)
-                self.logger.debug('New value: {}'.format(fan_speed_change_event.newSpeed))
                 fan_id = int(fan_speed_change_event.device.id)
                 new_value = float(fan_speed_change_event.newSpeed)
                 self.logger.info('Received instruction to set fan %s to speed %s', fan_id, new_value)
