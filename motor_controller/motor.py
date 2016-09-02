@@ -42,6 +42,9 @@ class Motor(LoggingHandler):
 
         self.current_pct = 0
 
+
+        self._enabled = True
+
         self._desired_speed = 0
         if speed is None:
             self.desired_speed = self.MIN_PERCENTAGE
@@ -51,7 +54,6 @@ class Motor(LoggingHandler):
         self.logger.info(
             'Motor on gpio %s ready for action', self.pwm.pin_number)
 
-        self._enabled = True
 
         self.dead_mans_switch = dead_mans_switch
         if dead_mans_switch is not None:
@@ -63,10 +65,10 @@ class Motor(LoggingHandler):
     def disable(self):
         self.current_pct = self.MIN_PERCENTAGE
         self.pwm.duty_cycle = self.desired_duty_cycle
-        self._enabled = self.dead_mans_switch.active
+        self._enabled = False
 
     def reenable(self):
-        self._enabled = self.dead_mans_switch.active
+        self._enabled = True
         self.desired_speed = self._desired_speed
 
     @property

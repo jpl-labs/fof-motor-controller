@@ -18,6 +18,7 @@ class InputPin(Pin, LoggingHandler):
         super(InputPin, self).__init__(header, pinNumber)
 
         self._header.pi.set_mode(self._pin_number, pigpio.INPUT)
+        self._header.pi.set_glitch_filter(self._pin_number, 1000)
         self._callbacks = []
 
     @property

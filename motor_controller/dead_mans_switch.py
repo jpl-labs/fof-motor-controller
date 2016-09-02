@@ -16,10 +16,12 @@ class DeadMansSwitch(LoggingHandler):
     def _noop(self):
         pass
 
-    def _on_engage(self):
+    def _on_engage(self, *args, **kwargs):
+        self.logger.info('Switch on gpio:%s engaged', self.pin._pin_number)
         self.on_engage()
 
-    def _on_release(self):
+    def _on_release(self, *args, **kwargs):
+        self.logger.info('Switch on gpio:%s release', self.pin._pin_number)
         self.on_release()
 
     @property
