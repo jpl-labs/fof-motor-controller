@@ -2,6 +2,15 @@ import pigpio
 
 from .logging_handler import LoggingHandler
 from .pin import Pin
+from .edges import Edges
+
+EDGE_TO_PIGPIO = {
+    Edges.RISING: pigpio.RISING_EDGE,
+    Edges.FALLING: pigpio.FALLING_EDGE,
+    Edges.EITHER: pigpio.EITHER_EDGE,
+    Edges.NONE: None
+}
+
 
 class InputPin(Pin, LoggingHandler):
 
@@ -9,6 +18,7 @@ class InputPin(Pin, LoggingHandler):
         super(InputPin, self).__init__(header, pinNumber)
 
         self._header.pi.set_mode(self._pin_number, pigpio.INPUT)
+        self._callbacks = []
 
     @property
     def value(self):
@@ -20,13 +30,20 @@ class InputPin(Pin, LoggingHandler):
 
     @pull.setter
     def pull(self, val):
-        if val:
-            self._header.pi.set_pull_up_down(self._pin_number, pigpio.PUD_UP)
-        else:
-            self._header.pi.set_pull_up_down(self._pin_number, pigpio.PUD_DOWN)
+        val = pigpio.PUD_UP if val else pigpio.PUD_DOWN
+        self._header.pi.set_pull_up_down(self._pin_number, val)
+
+    def add_callback(self, trigger, function):
+        trigger = EDGE_TO_PIGPIO[trigger]
+        callback = self._header.pi.callback(
+            self._pin_number, trigger, function)
+        self._callbacks.append(callback)
+        return callback
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._header.pi.set_pull_up_down(self._pin_number, pigpio.PUD_OFF)
+        for callback in self._callbacks:
+            callback.cancel()

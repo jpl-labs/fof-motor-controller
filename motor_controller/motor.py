@@ -7,7 +7,7 @@ from .logging_handler import LoggingHandler
 
 class Motor(LoggingHandler):
 
-    def __init__(self, gpioPinOut, config, speed=None):
+    def __init__(self, gpioPinOut, config, dead_mans_switch = None, speed=None):
         super(Motor, self).__init__()
         self.MIN_PERCENTAGE = int(config['min_pct'])
         self.MAX_PERCENTAGE = int(config['max_pct'])
@@ -27,8 +27,8 @@ class Motor(LoggingHandler):
         # 100%, and the motors will start spinning at 11%.'
         self.logger.debug('Arming motors, part 1. Moving to 1%')
 
-        self.pwm.frequency=int(config['pwm_frequency'])
-        self.pwm.range=100
+        self.pwm.frequency = int(config['pwm_frequency'])
+        self.pwm.range = 100
         self.pwm.duty_cycle = 1
 
         time.sleep(2)
@@ -42,6 +42,7 @@ class Motor(LoggingHandler):
 
         self.current_pct = 0
 
+        self._desired_speed = 0
         if speed is None:
             self.desired_speed = self.MIN_PERCENTAGE
         else:
@@ -50,8 +51,23 @@ class Motor(LoggingHandler):
         self.logger.info(
             'Motor on gpio %s ready for action', self.pwm.pin_number)
 
-    def __enter__(self):
-        return self
+        self._enabled = True
+
+        self.dead_mans_switch = dead_mans_switch
+        if dead_mans_switch is not None:
+            dead_mans_switch.on_release = self.disable
+            dead_mans_switch.on_engage = self.reenable
+            self._enabled = False
+
+
+    def disable(self):
+        self.current_pct = self.MIN_PERCENTAGE
+        self.pwm.duty_cycle = self.desired_duty_cycle
+        self._enabled = self.dead_mans_switch.active
+
+    def reenable(self):
+        self._enabled = self.dead_mans_switch.active
+        self.desired_speed = self._desired_speed
 
     @property
     def actual_speed(self):
@@ -63,10 +79,15 @@ class Motor(LoggingHandler):
 
     @desired_speed.setter
     def desired_speed(self, percent):
-        self.logger.debug(
-            'Setting pwd on gpio: %s to %s', self.pwm.pin_number, percent)
+        self._desired_speed = percent
 
-        while self.current_pct > percent:
+        if not self._enabled:
+            return
+
+        self.logger.debug(
+            'Setting pwd on gpio: %s to %s', self.pwm.pin_number, self._desired_speed)
+
+        while self.current_pct > self._desired_speed:
             self.current_pct -= 1
             self.pwm.duty_cycle = self.desired_duty_cycle
             sleep(0.02)
@@ -76,7 +97,8 @@ class Motor(LoggingHandler):
             self.pwm.duty_cycle = self.desired_duty_cycle
             sleep(0.02)
 
-        self.logger.debug('Done setting pwd on gpio: %s to %s', self.pwm.pin_number, percent)
+        self.logger.debug('Done setting pwd on gpio: %s to %s',
+                          self.pwm.pin_number, self._desired_speed)
 
     def min_speed(self):
         self.desired_speed = self.MIN_PERCENTAGE
@@ -87,7 +109,3 @@ class Motor(LoggingHandler):
     @property
     def desired_duty_cycle(self):
         return (0.22 * self.current_pct) + 50
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.logger.debug('Shutting down motor on gpio: %s', self.pwm.pin_number)
-        #del self.pwm
