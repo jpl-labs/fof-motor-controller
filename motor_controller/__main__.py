@@ -5,7 +5,6 @@ import signal
 import configparser
 import logging
 import json
-from datetime import datetime
 
 import asyncio
 from autobahn.asyncio.websocket import WebSocketClientProtocol, WebSocketClientFactory
@@ -30,7 +29,7 @@ def main(args=None):
         args = sys.argv[1:]
 
     def sigterm_handler(signum, frame):
-        logging.info('GAME: received sigterm')
+        logging.info('GAME: received sigterm %s %s', signum, frame)
         loop.close()
         sys.exit()
 
@@ -73,9 +72,6 @@ def main(args=None):
                     self.logger.info(
                         'Received instruction to set fan %s to speed %s', fan_id, new_value)
                     self.fof.PLAY_SIDES[fan_id].motor.desired_speed = new_value
-                    if new_value > self.fof.PLAY_SIDES[fan_id].motor.MIN_PERCENTAGE:
-                        self.fof.PLAY_SIDES[
-                            fan_id].motor.last_event_date = datetime.now()
 
             def onClose(self, wasClean, code, reason):
                 if reason:
