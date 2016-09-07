@@ -17,7 +17,7 @@ class Motor(LoggingHandler):
         self.INIT_WAIT = float(config['init_wait'])
         self.PWM_FREQUENCY = int(config['pwm_frequency'])
         self.pwm = gpioPinOut
-        self.pwm_lock = Lock()
+        #self.pwm_lock = Lock()
         self._enabled = True
         self._arm_motor()
 
@@ -33,7 +33,7 @@ class Motor(LoggingHandler):
             self._enabled = False
 
     def _arm_motor(self):
-        with (yield from self.pwm_lock):
+        #with (yield from self.pwm_lock):
             self.logger.debug('Initializing motor on gpio:%s',
                               self.pwm.pin_number)
 
@@ -61,18 +61,18 @@ class Motor(LoggingHandler):
     def disable(self):
         self._enabled = False
 
-        with (yield from self.pwm_lock):
-            self.pwm.duty_cycle = 50
+        #with (yield from self.pwm_lock):
+        self.pwm.duty_cycle = 50
 
     def reenable(self):
         self._enabled = True
 
-        with (yield from self.pwm_lock):
-            self.pwm.duty_cycle = (0.22 * self._desired_speed) + 50
+        #with (yield from self.pwm_lock):
+        self.pwm.duty_cycle = (0.22 * self._desired_speed) + 50
 
     @property
     def actual_speed(self):
-        return round((self.pwm.value - 50) / 0.22)
+        return round((self.pwm.duty_cycle - 50) / 0.22)
 
     @property
     def desired_speed(self):
@@ -80,7 +80,7 @@ class Motor(LoggingHandler):
 
     @desired_speed.setter
     def desired_speed(self, percent):
-        with (yield from self.pwm_lock):
+        #with (yield from self.pwm_lock):
             self._desired_speed = percent
 
             self.logger.debug(
