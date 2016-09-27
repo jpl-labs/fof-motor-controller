@@ -7,7 +7,7 @@ class DeadMansSwitch(LoggingHandler):
     def __init__(self, pin):
         super(DeadMansSwitch, self).__init__()
         self.pin = pin
-        self.pin.pull = True
+        self.pin.pull = False
         self.on_engage = self._noop
         self.on_release = self._noop
         self.pin.add_callback(Edges.FALLING, self._on_engage)

@@ -1,0 +1,15 @@
+version: '2'
+services:
+  motor-controller:
+    build: .
+    network_mode: "host"
+    depends_on:
+      - pigpiod
+  pigpiod:
+    network_mode: "host"
+    image: rpi-pigpio
+    cap_add:
+      - SYS_RAWIO
+    devices:
+      - "/dev/mem"
+      - "/dev/vcio"
